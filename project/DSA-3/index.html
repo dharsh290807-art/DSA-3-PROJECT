@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Bed & Operating Room (OR) Scheduling System</title>
+    <meta name="description" content="Centralized Hospital Bed Allocation, Operating Room (OR) Gantt Scheduling, Conflict Prevention, and DSA Priority Optimization Platform.">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+
+    <!-- MULTI-ROLE LOGIN OVERLAY SCREEN -->
+    <div class="login-screen-overlay" id="login-screen-overlay">
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-hospital-user"></i>
+                </div>
+                <div>
+                    <h2 class="brand-title" style="font-size: 1.5rem;">MedSchedule India</h2>
+                    <p class="brand-subtitle">Hospital Bed & OR Platform</p>
+                </div>
+            </div>
+
+            <!-- Classroom Demo Notice -->
+            <div class="prototype-notice-box mb-3">
+                <div class="d-flex align-items-center gap-2 text-warning font-bold text-xs">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>CLASSROOM FRONT-END PROTOTYPE</span>
+                </div>
+                <p class="text-xs text-muted mt-1 mb-0">
+                    This project is an educational front-end demonstration of Data Structures &amp; Algorithms. <strong>Not a secure authentication system.</strong> Passwords are simulated and not verified against a secure server. <strong>Do not enter real patient data.</strong> All data is stored purely in your browser's <code>localStorage</code>.
+                </p>
+            </div>
+
+            <!-- Role Tabs -->
+            <div class="role-tab-bar">
+                <div class="role-tab active" data-login-role="admin">
+                    <i class="fa-solid fa-building-user"></i> Office Staff
+                </div>
+                <div class="role-tab" data-login-role="doctor">
+                    <i class="fa-solid fa-user-doctor"></i> Doctor
+                </div>
+                <div class="role-tab" data-login-role="patient">
+                    <i class="fa-solid fa-user-injured"></i> Patient
+                </div>
+            </div>
+
+            <!-- Credentials Form -->
+            <form id="form-login">
+                <input type="hidden" id="login-active-role" value="admin">
+                
+                <div class="form-group text-start">
+                    <label class="form-label">Username / Portal ID</label>
+                    <input type="text" class="form-control" id="login-username" value="admin" required placeholder="Enter username or doctor/patient name">
+                </div>
+
+                <div class="form-group text-start">
+                    <label class="form-label">Password <span class="text-muted text-xs font-normal">(Demo simulation — unverified client-side)</span></label>
+                    <input type="password" class="form-control" id="login-password" value="••••••••" required placeholder="Enter demo password">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-3 mt-2" id="btn-login-submit" style="width: 100%;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Enter Demo Dashboard
+                </button>
+            </form>
+
+            <!-- 1-Click Demo Logins -->
+            <div class="demo-login-box">
+                <div class="text-xs text-muted mb-2">⚡ 1-CLICK INSTANT DEMO LOGINS <span class="text-muted">(Preconfigured Profiles)</span></div>
+                <button type="button" class="demo-btn" id="demo-login-admin">
+                    <i class="fa-solid fa-building-user text-primary"></i> Login as Hospital Operations Hub
+                </button>
+                <button type="button" class="demo-btn" id="demo-login-doctor">
+                    <i class="fa-solid fa-user-doctor text-violet"></i> Login as Dr. Ananya Sharma (Surgeon)
+                </button>
+                <button type="button" class="demo-btn" id="demo-login-patient">
+                    <i class="fa-solid fa-user-injured text-success"></i> Login as Patient (Rohan Sharma)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand-header">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-hospital-user"></i>
+                </div>
+                <div>
+                    <h1 class="brand-title">MedSchedule</h1>
+                    <div class="brand-subtitle">Bed & OR Central Hub</div>
+                </div>
+            </div>
+
+            <ul class="nav-menu">
+                <!-- Admin / Office Navigation -->
+                <li class="nav-item active role-admin-only" data-tab="tab-beds" id="nav-beds">
+                    <i class="fa-solid fa-bed"></i>
+                    <span>Bed Map & Wards</span>
+                </li>
+                <li class="nav-item role-admin-only" data-tab="tab-or" id="nav-or">
+                    <i class="fa-solid fa-square-h"></i>
+                    <span>OR Schedule Gantt</span>
+                </li>
+                <li class="nav-item role-admin-only" data-tab="tab-triage" id="nav-triage">
+                    <i class="fa-solid fa-truck-medical"></i>
+                    <span>Emergency Triage</span>
+                    <span class="nav-badge" id="triage-badge">3</span>
+                </li>
+                <li class="nav-item role-admin-only" data-tab="tab-pharmacy" id="nav-pharmacy">
+                    <i class="fa-solid fa-pills"></i>
+                    <span>Pharmacy & Meds</span>
+                </li>
+                <li class="nav-item role-admin-only" data-tab="tab-dsa-lab" id="nav-dsa-lab">
+                    <i class="fa-solid fa-flask-vial" style="color: #c084fc;"></i>
+                    <span>DSA Algorithm Lab</span>
+                    <span class="nav-badge" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">DSA</span>
+                </li>
+
+                <!-- Doctor Navigation -->
+                <li class="nav-item role-doctor-only" data-tab="tab-doctor-portal" id="nav-doctor">
+                    <i class="fa-solid fa-user-doctor"></i>
+                    <span>Doctor Dashboard</span>
+                </li>
+
+                <!-- Patient Navigation -->
+                <li class="nav-item role-patient-only" data-tab="tab-patient-portal" id="nav-patient">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                    <span>My Health Portal</span>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="live-status-card">
+                    <div class="pulse-dot"></div>
+                    <div>
+                        <div style="font-weight: 600;">DSA Conflict Engine</div>
+                        <div class="text-xs text-muted">Interval Solver Active</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Backdrop for mobile drawer -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- PROTOTYPE DATA NOTICE BANNER -->
+            <div class="prototype-banner mb-4">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="prototype-icon-box">
+                            <i class="fa-solid fa-flask-vial text-warning font-lg"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm text-white">Classroom Educational Prototype &bull; LocalStorage Mode</div>
+                            <div class="text-xs text-secondary mt-1">This platform demonstrates DSA principles (Min-Heap, Greedy Scheduling, Hash Map). <strong>Must not be used for real patient records or clinical hospital operations.</strong></div>
+                        </div>
+                    </div>
+                    <span class="status-badge reserved" style="font-size: 0.72rem;"><i class="fa-solid fa-triangle-exclamation"></i> Demo Only</span>
+                </div>
+            </div>
+
+            <!-- Top Header Bar -->
+            <header class="top-header">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-secondary mobile-menu-btn" id="btn-mobile-sidebar-toggle" aria-label="Toggle Navigation">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div>
+                        <h2 class="page-title" id="header-page-title">Resource Command Center</h2>
+                        <p class="text-muted text-xs" id="header-page-subtitle">Real-time hospital bed monitoring and operating room interval scheduler</p>
+                    </div>
+                </div>
+
+                <!-- Instant Patient Search Bar -->
+                <div class="header-search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" class="search-input" id="patient-search-input" placeholder="Search Patient Name...">
+                    <div class="search-results-dropdown" id="patient-search-results">
+                        <!-- Autocomplete Results Rendered Here -->
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Notification Bell Header Button -->
+                    <button class="notif-bell-btn" id="btn-header-notif" title="Notifications & Surgery Requests">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notif-badge" id="header-notif-badge">1</span>
+                    </button>
+
+                    <div class="header-actions role-admin-only">
+                        <!-- New Registration Action Dropdown -->
+                        <div class="dropdown-wrapper">
+                            <button class="btn btn-success" id="btn-registration-menu">
+                                <i class="fa-solid fa-user-plus"></i> New Registration <i class="fa-solid fa-chevron-down text-xs ms-1"></i>
+                            </button>
+                            <div class="dropdown-menu">
+                                <div class="dropdown-item" id="btn-open-register-doctor">
+                                    <i class="fa-solid fa-user-doctor text-violet"></i> Register New Doctor
+                                </div>
+                                <div class="dropdown-item" id="btn-open-register-patient">
+                                    <i class="fa-solid fa-user-injured text-success"></i> Register New Patient
+                                </div>
+                                <div class="dropdown-item" id="btn-open-add-bed">
+                                    <i class="fa-solid fa-bed text-primary"></i> Add Hospital Bed
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-secondary" id="btn-run-dsa-optimizer">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color: #c084fc;"></i> DSA Auto-Optimize
+                        </button>
+                        <button class="btn btn-primary" id="btn-open-schedule-modal">
+                            <i class="fa-solid fa-plus"></i> Schedule Surgery
+                        </button>
+                        <button class="btn btn-emergency" id="btn-open-emergency-modal">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Register Emergency
+                        </button>
+                    </div>
+
+                    <!-- User Profile Header Badge -->
+                    <div class="user-profile-bar" id="user-profile-bar">
+                        <div class="user-avatar" id="header-user-avatar">HO</div>
+                        <div class="user-meta">
+                            <span class="user-name" id="header-user-name">Hospital Operations Hub</span>
+                            <span class="user-role-badge" id="header-user-role">ADMIN</span>
+                        </div>
+                        <button class="btn btn-logout" id="btn-logout" title="Sign Out">
+                            <i class="fa-solid fa-power-off"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB 1: BED MAP & WARDS (Admin) -->
+            <section class="tab-content active role-admin-only" id="tab-beds">
+                <!-- Stat Metric Cards -->
+                <div class="metrics-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fa-solid fa-bed"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="metric-bed-occupancy">0%</div>
+                            <div class="stat-label">Bed Occupancy Rate</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="metric-beds-available">0 / 0</div>
+                            <div class="stat-label">Beds Available</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="metric-or-utilization">0%</div>
+                            <div class="stat-label">OR Capacity Utilization</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon amber">
+                            <i class="fa-solid fa-truck-medical"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-value" id="metric-triage-count">0</div>
+                            <div class="stat-label">Pending Emergency Cases</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-layer-group text-primary"></i> Hospital Wards & Bed Availability
+                    </h3>
+                </div>
+
+                <!-- Filter Chips -->
+                <div class="filter-bar">
+                    <div class="filter-chip active" data-ward="all">All Wards</div>
+                    <div class="filter-chip" data-ward="icu">ICU</div>
+                    <div class="filter-chip" data-ward="emergency">Emergency Triage</div>
+                    <div class="filter-chip" data-ward="surgical">Surgical Recovery</div>
+                    <div class="filter-chip" data-ward="cardiac">Cardiac CCU</div>
+                    <div class="filter-chip" data-ward="general">General Ward</div>
+                </div>
+
+                <!-- Bed Cards Grid -->
+                <div class="bed-grid" id="bed-grid">
+                    <!-- Dynamic Bed Cards Rendered Here -->
+                </div>
+            </section>
+
+            <!-- TAB 2: OPERATING ROOM GANTT SCHEDULE (Admin) -->
+            <section class="tab-content role-admin-only" id="tab-or">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-calendar-days text-primary"></i> Operating Room (OR) Surgery Gantt Schedule
+                    </h3>
+                </div>
+
+                <div class="gantt-container">
+                    <div class="gantt-header-row">
+                        <div>Operating Room</div>
+                        <div>08:00</div>
+                        <div>09:00</div>
+                        <div>10:00</div>
+                        <div>11:00</div>
+                        <div>12:00</div>
+                        <div>13:00</div>
+                        <div>14:00</div>
+                        <div>15:00</div>
+                        <div>16:00</div>
+                        <div>17:00</div>
+                        <div>18:00</div>
+                        <div>19:00</div>
+                    </div>
+
+                    <div id="gantt-rows">
+                        <!-- Dynamic Gantt Rows Rendered Here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: EMERGENCY TRIAGE QUEUE (Admin) -->
+            <section class="tab-content role-admin-only" id="tab-triage">
+                <div class="section-header">
+                    <div>
+                        <h3 class="section-title">
+                            <i class="fa-solid fa-truck-medical text-emergency"></i> Binary Min-Heap Emergency Triage Queue
+                        </h3>
+                        <p class="text-xs text-muted">Complete binary tree min-heap prioritization (Priority 1: Emergency &gt; Priority 2: Urgent &gt; Priority 3: Elective; FIFO tie-break)</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary btn-xs" id="btn-triage-view-dsa-lab">
+                            <i class="fa-solid fa-sitemap text-violet"></i> View Heap Visualizer in DSA Lab
+                        </button>
+                        <button class="btn btn-emergency btn-xs" id="btn-triage-extract-root">
+                            <i class="fa-solid fa-hand-holding-medical"></i> Treat Next Emergency (Extract-Min)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Root Peek Banner -->
+                <div id="triage-heap-root-banner" class="mb-4">
+                    <!-- Dynamic Root Peek Rendered Here -->
+                </div>
+
+                <div class="triage-grid" id="triage-grid">
+                    <!-- Dynamic Triage Cards Rendered Here -->
+                </div>
+            </section>
+
+            <!-- TAB 4: PHARMACY & MEDICATION RECORDS (Admin) -->
+            <section class="tab-content role-admin-only" id="tab-pharmacy">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-pills text-primary"></i> Central Hospital Pharmacy & Medication Log
+                    </h3>
+                </div>
+
+                <div class="pharmacy-table-container">
+                    <table class="pharmacy-table">
+                        <thead>
+                            <tr>
+                                <th>Rx ID</th>
+                                <th>Patient Name</th>
+                                <th>Bed Location</th>
+                                <th>Medicine & Dosage</th>
+                                <th>Frequency & Duration</th>
+                                <th>Prescribed By</th>
+                                <th>Issued Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pharmacy-records-table">
+                            <!-- Dynamic Pharmacy Table Rows Rendered Here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB: DSA ALGORITHM LAB (Interactive Educational Visualizer) -->
+            <section class="tab-content" id="tab-dsa-lab">
+                <div class="section-header">
+                    <div>
+                        <h3 class="section-title">
+                            <i class="fa-solid fa-flask-vial" style="color: #c084fc;"></i> MedSchedule DSA Algorithm Lab
+                        </h3>
+                        <p class="text-xs text-muted">Interactive college DSA laboratory demonstrating Binary Min-Heap Priority Queues, Greedy EFT Interval Schedulers, and Direct-Address Hash Tables.</p>
+                    </div>
+                </div>
+
+                <div id="dsa-lab-container">
+                    <!-- Dynamic Interactive DSA Lab View Rendered Here -->
+                </div>
+            </section>
+
+            <!-- TAB 5: DOCTOR PORTAL VIEW -->
+            <section class="tab-content role-doctor-only" id="tab-doctor-portal">
+                <div class="hero-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h3 class="font-heading text-xl font-bold" id="doc-welcome-name">Welcome, Dr. Ananya Sharma</h3>
+                            <p class="text-sm text-muted" id="doc-specialty">Specialty: Cardiothoracic Surgery</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary" id="btn-open-request-surgery-modal">
+                                <i class="fa-solid fa-file-signature text-violet"></i> Request Surgery for Patient
+                            </button>
+                            <button class="btn btn-primary" id="btn-open-prescribe-modal">
+                                <i class="fa-solid fa-file-medical"></i> Prescribe Medication
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="patient-status-tracker">
+                        <div class="tracker-step completed"><i class="fa-solid fa-check-circle"></i> Morning Rounds</div>
+                        <div class="tracker-step active"><i class="fa-solid fa-scalpel"></i> Active OR Schedule</div>
+                        <div class="tracker-step"><i class="fa-solid fa-bed"></i> Post-Op Discharge Review</div>
+                    </div>
+                </div>
+
+                <!-- Doctor Notifications Inbox Section -->
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-envelope text-primary"></i> Notifications & Approval Updates
+                    </h3>
+                </div>
+                <div class="mb-4" id="doc-inbox-section">
+                    <!-- Dynamic Doctor Inbox Rendered Here -->
+                </div>
+
+                <!-- Doctor's Surgeries List -->
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-calendar-check text-primary"></i> Today's Assigned Surgeries
+                    </h3>
+                </div>
+
+                <div class="triage-grid mb-5" id="doc-surgeries-grid">
+                    <!-- Dynamic Doctor Surgeries Rendered Here -->
+                </div>
+
+                <!-- Doctor's Issued Prescriptions -->
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-pills text-primary"></i> E-Prescriptions Issued by You
+                    </h3>
+                </div>
+
+                <div class="prescription-grid mb-5" id="doc-prescriptions-grid">
+                    <!-- Dynamic Doctor Prescriptions Rendered Here -->
+                </div>
+
+                <!-- Doctor's Patients List -->
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-bed-pulse text-primary"></i> Admitted Patients Under Your Care
+                    </h3>
+                </div>
+
+                <div class="bed-grid" id="doc-patients-grid">
+                    <!-- Dynamic Doctor Patients Rendered Here -->
+                </div>
+            </section>
+
+            <!-- TAB 6: PATIENT PORTAL VIEW -->
+            <section class="tab-content role-patient-only" id="tab-patient-portal">
+                <div class="hero-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h3 class="font-heading text-xl font-bold" id="pat-welcome-name">Welcome, Rohan Sharma</h3>
+                            <p class="text-sm text-muted">Patient ID: PAT-101 | Admission Status: Confirmed</p>
+                        </div>
+                        <span class="status-badge available" style="font-size: 0.85rem; padding: 6px 14px;">Pre-Op Ready</span>
+                    </div>
+
+                    <!-- Live Patient Recovery Progress Bar -->
+                    <div class="patient-status-tracker">
+                        <div class="tracker-step completed"><i class="fa-solid fa-check"></i> Registration</div>
+                        <div class="tracker-step completed"><i class="fa-solid fa-bed"></i> Bed Reserved</div>
+                        <div class="tracker-step active"><i class="fa-solid fa-clock"></i> OR Surgery Scheduled</div>
+                        <div class="tracker-step"><i class="fa-solid fa-heart-pulse"></i> Post-Op Recovery</div>
+                    </div>
+                </div>
+
+                <!-- Patient Notification Messages Alert Box -->
+                <div class="mb-4" id="pat-notifications-box">
+                    <!-- Dynamic Patient Notifications Rendered Here -->
+                </div>
+
+                <div class="row mb-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <!-- Bed Assignment Info Card -->
+                    <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 14px; padding: 24px;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="stat-icon blue">
+                                <i class="fa-solid fa-bed"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-heading text-lg font-bold">Assigned Bed Location</h4>
+                                <span class="text-xs text-muted">Hospital Ward Information</span>
+                            </div>
+                        </div>
+                        <div id="pat-bed-info" class="w-100 mt-2">
+                            <!-- Dynamic Bed Info Rendered Here -->
+                        </div>
+                    </div>
+
+                    <!-- Surgery Schedule Info Card -->
+                    <div class="stat-card" style="flex-direction: column; align-items: flex-start; gap: 14px; padding: 24px;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="stat-icon purple">
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-heading text-lg font-bold">Scheduled Surgery Details</h4>
+                                <span class="text-xs text-muted">Operating Room & Lead Doctor</span>
+                            </div>
+                        </div>
+                        <div id="pat-surgery-info" class="w-100 mt-2">
+                            <!-- Dynamic Surgery Info Rendered Here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient's Active Prescribed Medications -->
+                <div class="section-header mt-4">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-capsules text-success"></i> My Prescribed Medications & Pharmacy Schedule
+                    </h3>
+                </div>
+
+                <div class="prescription-grid mb-4" id="pat-prescriptions-grid">
+                    <!-- Dynamic Patient Active Prescriptions Rendered Here -->
+                </div>
+
+                <!-- Pre-Op Guidance Checklist -->
+                <div class="stat-card mt-4" style="flex-direction: column; align-items: flex-start; padding: 24px;">
+                    <h4 class="font-heading text-lg font-bold mb-3"><i class="fa-solid fa-clipboard-check text-success"></i> Pre-Operative Patient Checklist</h4>
+                    <ul class="text-sm text-secondary" style="list-style: none; display: flex; flex-direction: column; gap: 10px;">
+                        <li><i class="fa-solid fa-circle-check text-success"></i> Fasting required 8 hours prior to procedure (No food or water after midnight).</li>
+                        <li><i class="fa-solid fa-circle-check text-success"></i> Pre-anesthesia laboratory clearance verified by attending doctor.</li>
+                        <li><i class="fa-solid fa-circle-check text-success"></i> Post-op recovery bed reserved in Surgical Recovery Ward.</li>
+                    </ul>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL: ADMIN PENDING SURGERY APPROVALS DRAWER -->
+    <div class="modal-overlay" id="modal-pending-approvals">
+        <div class="modal-box" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #f59e0b;">
+                    <i class="fa-solid fa-file-signature"></i> Pending Surgery Applications & Approval Hub
+                </h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            
+            <div id="pending-approvals-body" class="mt-3">
+                <!-- Dynamic Pending Approval Cards Rendered Here -->
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <button type="button" class="btn btn-secondary cancel-modal-btn">Close Drawer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DOCTOR APPLY / REQUEST SURGERY MODAL -->
+    <div class="modal-overlay" id="modal-request-surgery">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #8b5cf6;"><i class="fa-solid fa-file-circle-plus"></i> Apply / Request Surgery for Patient</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="form-request-surgery">
+                <div class="form-group">
+                    <label class="form-label">Select Patient</label>
+                    <select class="form-control" id="req-patient-select" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Proposed Surgery Procedure Name</label>
+                    <input type="text" class="form-control" id="req-surgery-type" required placeholder="e.g. Coronary Angioplasty & Stenting">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Urgency Priority</label>
+                        <select class="form-control" id="req-priority" required>
+                            <option value="1">Priority 1 - Emergency</option>
+                            <option value="2" selected>Priority 2 - Urgent</option>
+                            <option value="3">Priority 3 - Elective</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Est. Duration (Minutes)</label>
+                        <input type="number" class="form-control" id="req-duration" value="120" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Target Post-Op Recovery Ward</label>
+                    <select class="form-control" id="req-ward" required>
+                        <option value="icu">Intensive Care Unit (ICU)</option>
+                        <option value="surgical">Surgical Recovery Ward</option>
+                        <option value="cardiac">Cardiac Care Unit (CCU)</option>
+                        <option value="general">General Ward</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Clinical Justification / Diagnostic Notes</label>
+                    <input type="text" class="form-control" id="req-notes" placeholder="Angiography shows 85% occlusion...">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Request to Admin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: INSTANT PATIENT PROFILE DETAILS DRAWER -->
+    <div class="modal-overlay" id="modal-patient-details">
+        <div class="modal-box" style="max-width: 640px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #38bdf8;" id="patient-detail-title">
+                    <i class="fa-solid fa-address-card"></i> Patient Clinical Profile
+                </h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            
+            <div id="patient-detail-body">
+                <!-- Dynamic Instant Patient Details Rendered Here -->
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <button type="button" class="btn btn-primary cancel-modal-btn">Close Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: ALLOCATE BED -->
+    <div class="modal-overlay" id="modal-allocate-bed">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" id="allocate-bed-title">Allocate Bed</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="form-allocate-bed">
+                <input type="hidden" id="allocate-bed-id">
+                
+                <div class="form-group">
+                    <label class="form-label">Patient Full Name</label>
+                    <input type="text" class="form-control" id="allocate-patient-name" required placeholder="e.g. Ramesh Verma">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Patient Age</label>
+                        <input type="number" class="form-control" id="allocate-patient-age" required placeholder="e.g. 45">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Attending Doctor</label>
+                        <select class="form-control" id="allocate-doctor-select" required></select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Medical Condition / Diagnostic Summary</label>
+                    <input type="text" class="form-control" id="allocate-condition" required placeholder="e.g. Post-Op Trauma Observation">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Allocate Patient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SCHEDULE SURGERY -->
+    <div class="modal-overlay" id="modal-schedule-surgery">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title">Schedule OR Surgery</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="form-schedule-surgery">
+                <input type="hidden" id="surgery-triage-id">
+
+                <div class="form-group">
+                    <label class="form-label">Patient Name</label>
+                    <input type="text" class="form-control" id="surgery-patient-name" required placeholder="Patient Name">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-control" id="surgery-patient-age" required placeholder="35">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority Triage Level</label>
+                        <select class="form-control" id="surgery-priority" required>
+                            <option value="1">Priority 1 - Emergency</option>
+                            <option value="2">Priority 2 - Urgent</option>
+                            <option value="3" selected>Priority 3 - Elective</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Surgery Procedure Name</label>
+                    <input type="text" class="form-control" id="surgery-type" required placeholder="e.g. Laparoscopic Appendectomy">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Operating Room (OR)</label>
+                        <select class="form-control" id="surgery-or" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Lead Surgeon</label>
+                        <select class="form-control" id="surgery-surgeon" required></select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Start Time (HH:MM) <span class="text-xs text-muted">(08:00 to 20:00)</span></label>
+                        <input type="text" class="form-control" id="surgery-start-time" value="09:00" required placeholder="09:00" pattern="^([01]\d|2[0-3]):([0-5]\d)$" title="Enter 24-hr time in HH:MM format between 08:00 and 20:00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duration (Minutes) <span class="text-xs text-muted">(Min: 15, Max: 720)</span></label>
+                        <input type="number" class="form-control" id="surgery-duration" value="120" min="15" max="720" required placeholder="120">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Post-Operative Recovery Ward Reservation <span class="text-xs text-warning">(Vacant Bed Required)</span></label>
+                    <select class="form-control" id="surgery-postop-ward" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Clinical Notes</label>
+                    <input type="text" class="form-control" id="surgery-notes" placeholder="Special equipment, anesthesia prep...">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Schedule & Reserve Bed</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: REGISTER EMERGENCY CASE -->
+    <div class="modal-overlay" id="modal-add-emergency">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Triage Registration</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="form-add-emergency">
+                <div class="form-group">
+                    <label class="form-label">Emergency Patient Name</label>
+                    <input type="text" class="form-control" id="emg-patient-name" required placeholder="Patient Name">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-control" id="emg-patient-age" required placeholder="45">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select class="form-control" id="emg-priority">
+                            <option value="1" selected>Priority 1 - Immediate Emergency</option>
+                            <option value="2">Priority 2 - Urgent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Critical Condition / Diagnosis</label>
+                    <input type="text" class="form-control" id="emg-condition" required placeholder="e.g. Severe Trauma Internal Hemorrhage">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Required OR Specialty</label>
+                        <select class="form-control" id="emg-specialty">
+                            <option value="General & Trauma">General & Trauma</option>
+                            <option value="Cardiothoracic">Cardiothoracic</option>
+                            <option value="Neurosurgery & Spine">Neurosurgery & Spine</option>
+                            <option value="Orthopedics & Arthroscopy">Orthopedics & Arthroscopy</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estimated Duration (Mins)</label>
+                        <input type="number" class="form-control" id="emg-duration" value="90" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Required Post-Op Ward</label>
+                    <select class="form-control" id="emg-ward">
+                        <option value="icu">Intensive Care Unit (ICU)</option>
+                        <option value="emergency">Emergency Ward</option>
+                        <option value="cardiac">Cardiac CCU</option>
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-emergency">Queue Emergency Case</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: PRESCRIBE MEDICATION MODAL -->
+    <div class="modal-overlay" id="modal-prescribe-med">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #14b8a6;"><i class="fa-solid fa-pills"></i> E-Prescribe Medication</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="form-prescribe-med">
+                <div class="form-group">
+                    <label class="form-label">Select Patient</label>
+                    <select class="form-control" id="rx-patient-name" required></select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Medicine Name & Strength</label>
+                        <input type="text" class="form-control" id="rx-medicine-name" required placeholder="e.g. Paracetamol 650mg">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-control" id="rx-category">
+                            <option value="Antibiotic">Antibiotic</option>
+                            <option value="Analgesic Pain Relief">Analgesic Pain Relief</option>
+                            <option value="Anticoagulant">Anticoagulant</option>
+                            <option value="Bronchodilator">Bronchodilator</option>
+                            <option value="Antacid / PPI">Antacid / PPI</option>
+                            <option value="General Medication">General Medication</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Dosage</label>
+                        <input type="text" class="form-control" id="rx-dosage" required placeholder="e.g. 1 Tablet / 5ml">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Frequency</label>
+                        <select class="form-control" id="rx-frequency">
+                            <option value="1-0-1 (Morning & Night After Meals)">1-0-1 (Morning & Night)</option>
+                            <option value="1-1-1 (Morning, Afternoon & Night)">1-1-1 (Thrice Daily)</option>
+                            <option value="1-0-0 (Once Daily Morning)">1-0-0 (Morning Only)</option>
+                            <option value="0-0-1 (Night Only)">0-0-1 (Night Only)</option>
+                            <option value="1-0-1 (SOS / As Needed)">1-0-1 (SOS / As Needed)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Duration</label>
+                    <input type="text" class="form-control" id="rx-duration" value="5 Days" required placeholder="e.g. 5 Days">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Special Instructions / Administration Notes</label>
+                    <input type="text" class="form-control" id="rx-instructions" placeholder="Take after meals with water...">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+                        <i class="fa-solid fa-file-signature"></i> Issue Digital Rx
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: REGISTER NEW DOCTOR -->
+    <div class="modal-overlay" id="modal-register-doctor">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #8b5cf6;"><i class="fa-solid fa-user-doctor"></i> Register New Doctor</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="form-register-doctor">
+                <div class="form-group">
+                    <label class="form-label">Doctor Full Name</label>
+                    <input type="text" class="form-control" id="reg-doc-name" required placeholder="e.g. Dr. Rahul Deshmukh">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Specialty</label>
+                        <select class="form-control" id="reg-doc-specialty" required>
+                            <option value="Cardiothoracic Surgery">Cardiothoracic Surgery</option>
+                            <option value="Neurosurgery & Spine">Neurosurgery & Spine</option>
+                            <option value="Orthopedic Surgery">Orthopedic Surgery</option>
+                            <option value="General & Trauma Surgery">General & Trauma Surgery</option>
+                            <option value="Pediatric Surgery">Pediatric Surgery</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Portal Username</label>
+                        <input type="text" class="form-control" id="reg-doc-username" required placeholder="dr.rahul">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                        <i class="fa-solid fa-user-plus"></i> Register Doctor
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 6: REGISTER NEW PATIENT -->
+    <div class="modal-overlay" id="modal-register-patient">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #10b981;"><i class="fa-solid fa-user-injured"></i> Register New Patient</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="form-register-patient">
+                <div class="form-group">
+                    <label class="form-label">Patient Full Name</label>
+                    <input type="text" class="form-control" id="reg-pat-name" required placeholder="e.g. Karan Malhotra">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-control" id="reg-pat-age" required placeholder="42">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Portal Username</label>
+                        <input type="text" class="form-control" id="reg-pat-username" required placeholder="karan.malhotra">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Primary Diagnosis / Condition</label>
+                    <input type="text" class="form-control" id="reg-pat-condition" required placeholder="e.g. Post-Op Trauma / Acute Abdominal Pain">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        <i class="fa-solid fa-user-plus"></i> Register Patient
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 7: ADD NEW HOSPITAL BED -->
+    <div class="modal-overlay" id="modal-add-bed">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #3b82f6;"><i class="fa-solid fa-bed"></i> Add New Hospital Bed</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="form-add-bed">
+                <div class="form-group">
+                    <label class="form-label">Target Ward</label>
+                    <select class="form-control" id="add-bed-ward" required>
+                        <option value="icu">Intensive Care Unit (ICU)</option>
+                        <option value="emergency">Emergency Triage</option>
+                        <option value="surgical">Surgical Recovery Ward</option>
+                        <option value="cardiac">Cardiac Care Unit (CCU)</option>
+                        <option value="general">General Ward - North</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Bed Number / Identifier</label>
+                    <input type="text" class="form-control" id="add-bed-number" required placeholder="e.g. 109, 306, 506">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notes / Equipment</label>
+                    <input type="text" class="form-control" id="add-bed-notes" placeholder="e.g. Ventilator Equipped, Electric Recliner Bed">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary cancel-modal-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> Add Bed to Ward
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 8: DSA TERMINAL LOG CONSOLE -->
+    <div class="modal-overlay" id="modal-dsa-terminal">
+        <div class="modal-box" style="max-width: 680px;">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #38bdf8;">
+                    <i class="fa-solid fa-code"></i> DSA Algorithmic Execution Terminal
+                </h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="terminal-window" id="dsa-log-terminal">
+                <!-- Live Log Output -->
+            </div>
+            <div class="d-flex justify-content-end mt-4">
+                <button type="button" class="btn btn-primary cancel-modal-btn">Close Terminal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Main JavaScript App -->
+    <script type="module" src="js/app.js?v=3"></script>
+</body>
+</html>
